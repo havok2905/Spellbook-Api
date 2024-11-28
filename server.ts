@@ -1,4 +1,5 @@
 import cors from 'cors';
+import { CreateSpellbookRequest } from './requests/CreateSpellbookRequest';
 import { errorHandler } from './middleware/errorHandler';
 import express from 'express';
 import Knex from 'knex';
@@ -9,11 +10,12 @@ import { SpellbookController } from './controllers/SpellbookController';
 import { SpellbookRepository } from './repositories/SpellbookRepository';
 
 const app = express();
-const port = 3001;
+const port = 4000;
 
 const knex = Knex(knexConfig.development);
 
 app.use(cors());
+app.use(express.json());
 
 app.get('/', (_request, response) => {
   response.send({});
@@ -49,6 +51,31 @@ app.get('/spellbooks', async (_request, response, next) => {
     const spellbooksResponse = await spellbookController.get();
     response.send(spellbooksResponse.toJson());
   } catch(error) {
+    next(error);
+  }
+});
+
+app.post('/spellbooks', async (request, response, next) => {
+  try {
+    const { name } = request.body;
+    const createSpellbookRequest = new CreateSpellbookRequest(name);
+    const spellbooksRepository = new SpellbookRepository(knex);
+    const spellbookController = new SpellbookController(spellbooksRepository);
+    const spellbookResponse = await spellbookController.create(createSpellbookRequest);
+    response.send(spellbookResponse.toJson());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/spellbooks/:id', async (request, response, next) => {
+  try {
+    const id = request.params.id;
+    const spellbooksRepository = new SpellbookRepository(knex);
+    const spellbookController = new SpellbookController(spellbooksRepository);
+    await spellbookController.destroy(id);
+    response.sendStatus(200);
+  } catch (error) {
     next(error);
   }
 });

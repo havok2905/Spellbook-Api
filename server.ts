@@ -46,8 +46,9 @@ app.get('/spells/:id', async (request, response, next) => {
 
 app.get('/spellbooks', async (_request, response, next) => {
   try {
+    const spellRepository = new SpellRepository(knex);
     const spellbooksRepository = new SpellbookRepository(knex);
-    const spellbookController = new SpellbookController(spellbooksRepository);
+    const spellbookController = new SpellbookController(spellRepository, spellbooksRepository);
     const spellbooksResponse = await spellbookController.get();
     response.send(spellbooksResponse.toJson());
   } catch(error) {
@@ -60,9 +61,36 @@ app.post('/spellbooks', async (request, response, next) => {
     const { name } = request.body;
     const createSpellbookRequest = new CreateSpellbookRequest(name);
     const spellbooksRepository = new SpellbookRepository(knex);
-    const spellbookController = new SpellbookController(spellbooksRepository);
+    const spellRepository = new SpellRepository(knex);
+    const spellbookController = new SpellbookController(spellRepository, spellbooksRepository);
     const spellbookResponse = await spellbookController.create(createSpellbookRequest);
     response.send(spellbookResponse.toJson());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/spellbooks/:id/removeSpell/:spellId', async (request, response, next) => {
+  try {
+    const { id, spellId } = request.params;
+    const spellbooksRepository = new SpellbookRepository(knex);
+    const spellRepository = new SpellRepository(knex);
+    const spellbookController = new SpellbookController(spellRepository, spellbooksRepository);
+    await spellbookController.removeSpell(id, spellId);
+    response.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/spellbooks/:id/addSpell/:spellId', async (request, response, next) => {
+  try {
+    const { id, spellId } = request.params;
+    const spellbooksRepository = new SpellbookRepository(knex);
+    const spellRepository = new SpellRepository(knex);
+    const spellbookController = new SpellbookController(spellRepository, spellbooksRepository);
+    await spellbookController.addSpell(id, spellId);
+    response.sendStatus(200);
   } catch (error) {
     next(error);
   }
@@ -72,7 +100,8 @@ app.delete('/spellbooks/:id', async (request, response, next) => {
   try {
     const id = request.params.id;
     const spellbooksRepository = new SpellbookRepository(knex);
-    const spellbookController = new SpellbookController(spellbooksRepository);
+    const spellRepository = new SpellRepository(knex);
+    const spellbookController = new SpellbookController(spellRepository, spellbooksRepository);
     await spellbookController.destroy(id);
     response.sendStatus(200);
   } catch (error) {
@@ -84,7 +113,8 @@ app.get('/spellbooks/:id', async (request, response, next) => {
   try {
     const id = request.params.id;
     const spellbooksRepository = new SpellbookRepository(knex);
-    const spellbookController = new SpellbookController(spellbooksRepository);
+    const spellRepository = new SpellRepository(knex);
+    const spellbookController = new SpellbookController(spellRepository, spellbooksRepository);
     const spellbookResponse = await spellbookController.find(id);
     response.send(spellbookResponse.toJson());
   } catch(error) {

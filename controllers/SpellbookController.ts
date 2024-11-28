@@ -1,5 +1,6 @@
 import { BadArgumentException } from '../exceptions/exceptions';
 import { CreateSpellbookRequest } from '../requests/CreateSpellbookRequest';
+import { ISpellRepository } from '../repositories/SpellRepository';
 import { ISpellbookRepository } from '../repositories/SpellbookRepository';
 import { SpellbookModel } from '../models/SpellbookModel';
 import { SpellbookResponse } from '../responses/SpellbookResponse';
@@ -7,9 +8,32 @@ import { SpellbooksResponse } from '../responses/SpellbooksResponse';
 
 export class SpellbookController {
   private spellbookRepository: ISpellbookRepository;
+  private spellRepository: ISpellRepository;
 
-  constructor(spellbookRepository: ISpellbookRepository) {
+  constructor(
+    spellRepository: ISpellRepository,
+    spellbookRepository: ISpellbookRepository
+  ) {
+    this.spellRepository = spellRepository;
     this.spellbookRepository = spellbookRepository;
+  }
+
+  async addSpell(id: string, spellId: string) {
+    if (!id || !spellId) {
+      throw new BadArgumentException();
+    }
+
+    await this.spellbookRepository.find(id);
+    await this.spellRepository.find(spellId);
+    await this.spellbookRepository.addSpell(id, spellId);
+  }
+
+  async removeSpell(id: string, spellId: string) {
+    if (!id || !spellId) {
+      throw new BadArgumentException();
+    }
+
+    await this.spellbookRepository.removeSpell(id, spellId);
   }
 
   async create(request: CreateSpellbookRequest): Promise<SpellbookResponse> {

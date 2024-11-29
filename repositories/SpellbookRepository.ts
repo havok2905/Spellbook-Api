@@ -67,7 +67,7 @@ export class SpellbookRepository implements ISpellbookRepository {
         .then(() => {
           resolve();
         })
-        .catch((error) => {
+        .catch(() => {
           reject();
         })
     });
@@ -117,13 +117,11 @@ export class SpellbookRepository implements ISpellbookRepository {
             .then(() => {
               resolve();
             })
-            .catch((error) => {
-              console.log(error);
+            .catch(() => {
               reject();
             });
         })
-        .catch((error) => {
-          console.log(error);
+        .catch(() => {
           reject();
         });
         
@@ -134,8 +132,7 @@ export class SpellbookRepository implements ISpellbookRepository {
         .then(() => {
           resolve();
         })
-        .catch((error) => {
-          console.log(error);
+        .catch(() => {
           reject();
         });
     });

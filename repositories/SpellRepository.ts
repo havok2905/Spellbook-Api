@@ -1,5 +1,6 @@
 import { ActionModel } from '../models/ActionModel';
 import { CastingTimeModel } from '../models/CastingTimeModel';
+import { CreateSpellRequest } from '../requests/CreateSpellRequest';
 import { CreatureModel } from '../models/CreatureModel';
 import { DurationTimeModel } from '../models/DurationTimeModel';
 import { EntityNotFoundException } from '../exceptions/exceptions';
@@ -8,6 +9,10 @@ import Knex from 'knex';
 import { SpellModel } from '../models/SpellModel';
 
 export interface ISpellRepository {
+  create(createSpellRequest: CreateSpellRequest): Promise<SpellModel>;
+  createCastingTime(actionType: string, total: number, spellId: string): Promise<CastingTimeModel>;
+  createDurationTime(actionType: string, total: number, spellId: string): Promise<DurationTimeModel>;
+  destroy(id: string): Promise<void>;
   find(id: string): Promise<SpellModel>;
   findAll(): Promise<SpellModel[]>;
   findBySpellbook(spellbookId: string): Promise<SpellModel[]>;
@@ -32,6 +37,180 @@ export class SpellRepository implements ISpellRepository {
     this.knex = knex;
   }
 
+  async destroy(id: string): Promise<void> {
+    const response = new Promise<void>((resolve, reject) => {
+      this
+        .knex(this.spellbookSpellsTableName)
+        .delete()
+        .where({ spell_id: id})
+        .then(() => {
+          this
+            .knex(this.castingTimesTableName)
+            .delete()
+            .where({ spell_id: id })
+            .then(() => {
+              this
+                .knex(this.durationTimesTableName)
+                .delete()
+                .where({ spell_id: id })
+                .then(() => {
+                  this
+                    .knex(this.tableName)
+                    .delete()
+                    .where({ id })
+                    .then(() => {
+                      resolve();
+                    })
+                    .catch(() => {
+                      reject();
+                    });
+                })
+                .catch(() => {
+                  reject();
+                })
+            })
+            .catch(() => {
+              reject();
+            });
+        })
+        .catch(() => {
+          reject();
+        });
+        
+      this
+        .knex(this.tableName)
+        .delete()
+        .where({ id })
+        .then(() => {
+          resolve();
+        })
+        .catch(() => {
+          reject();
+        });
+    });
+
+    return response;
+  }
+
+  async create(createSpellRequest: CreateSpellRequest): Promise<SpellModel> {
+    const spellModel = new SpellModel(
+      createSpellRequest.components,
+      createSpellRequest.concentration,
+      JSON.stringify(createSpellRequest.description),
+      JSON.stringify(createSpellRequest.descriptionHigherLevel),
+      createSpellRequest.level,
+      createSpellRequest.magicSchool,
+      createSpellRequest.materials,
+      createSpellRequest.name,
+      createSpellRequest.range,
+      createSpellRequest.ritual,
+      createSpellRequest.source,
+      createSpellRequest.system,
+      new Date().toISOString().slice(0, 19).replace('T', ' ')
+    );
+
+    spellModel.generateId();
+
+    const response = new Promise<SpellModel>((resolve, reject) => {
+      this
+        .knex(this.tableName)
+        .insert({
+          id: spellModel.getId(),
+          components: spellModel.components,
+          concentration: spellModel.concentration,
+          description: spellModel.description,
+          description_higher_level: spellModel.description_higher_level,
+          level: spellModel.level,
+          magic_school: spellModel.magic_school,
+          materials: spellModel.materials,
+          name: spellModel.name,
+          range_text: spellModel.range_text,
+          ritual: spellModel.ritual,
+          source: spellModel.source,
+          ttrpg_system: spellModel.ttrpg_system,
+          created_at: spellModel.created_at
+        })
+        .then(() => {
+          resolve(spellModel);
+        })
+        .catch(() => {
+          reject();
+        });
+    });
+
+    return response;
+  }
+
+  async createCastingTime(
+    actionType: string,
+    total: number,
+    spellId: string
+  ): Promise<CastingTimeModel> {
+    const castingTimeModel = new CastingTimeModel(
+      actionType,
+      spellId,
+      total,
+      new Date().toISOString().slice(0, 19).replace('T', ' ')
+    );
+
+    castingTimeModel.generateId();
+
+    const response = new Promise<CastingTimeModel>((resolve, reject) => {
+      this
+      .knex(this.castingTimesTableName)
+      .insert({
+        id: castingTimeModel.getId(),
+        action_type: castingTimeModel.action_type,
+        spell_id: castingTimeModel.spell_id,
+        total: castingTimeModel.total,
+        created_at: castingTimeModel.created_at
+      })
+      .then(() => {
+        resolve(castingTimeModel);
+      })
+      .catch(() => {
+        reject();
+      });
+    });
+
+    return response;
+  }
+
+  async createDurationTime(
+    actionType: string,
+    total: number,
+    spellId: string
+  ): Promise<DurationTimeModel> {
+    const durationTimeModel = new DurationTimeModel(
+      actionType,
+      spellId,
+      total,
+      new Date().toISOString().slice(0, 19).replace('T', ' ')
+    );
+
+    durationTimeModel.generateId();
+
+    const response = new Promise<CastingTimeModel>((resolve, reject) => {
+      this
+      .knex(this.durationTimesTableName)
+      .insert({
+        id: durationTimeModel.getId(),
+        action_type: durationTimeModel.action_type,
+        spell_id: durationTimeModel.spell_id,
+        total: durationTimeModel.total,
+        created_at: durationTimeModel.created_at
+      })
+      .then(() => {
+        resolve(durationTimeModel);
+      })
+      .catch(() => {
+        reject();
+      });
+    });
+
+    return response;
+  }
+
   async find(id: string): Promise<SpellModel> {
     const response = new Promise<SpellModel>((resolve, reject) => {
       this
@@ -48,8 +227,7 @@ export class SpellRepository implements ISpellRepository {
           const model = this.mapModel(spell);
           resolve(model);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });
@@ -68,8 +246,7 @@ export class SpellRepository implements ISpellRepository {
           });
           resolve(models);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });
@@ -90,8 +267,7 @@ export class SpellRepository implements ISpellRepository {
           });
           resolve(models);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });
@@ -111,8 +287,7 @@ export class SpellRepository implements ISpellRepository {
           });
           resolve(models);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });
@@ -132,8 +307,7 @@ export class SpellRepository implements ISpellRepository {
           });
           resolve(models);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });
@@ -153,8 +327,7 @@ export class SpellRepository implements ISpellRepository {
           });
           resolve(models);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });
@@ -174,8 +347,7 @@ export class SpellRepository implements ISpellRepository {
           });
           resolve(models);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });
@@ -195,8 +367,7 @@ export class SpellRepository implements ISpellRepository {
           });
           resolve(models);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch(() => {
           reject();
         });
     });

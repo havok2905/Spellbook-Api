@@ -1,3 +1,8 @@
+import {
+  CastingTimeRequest,
+  CreateSpellRequest,
+  DurationTimeRequest
+} from './requests/CreateSpellRequest';
 import cors from 'cors';
 import { CreateSpellbookRequest } from './requests/CreateSpellbookRequest';
 import { errorHandler } from './middleware/errorHandler';
@@ -38,6 +43,73 @@ app.get('/spells/:id', async (request, response, next) => {
     const spellRepository = new SpellRepository(knex);
     const spellController = new SpellController(spellRepository);
     const spellResponse = await spellController.find(id);
+    response.send(spellResponse.toJson());
+  } catch(error) {
+    next(error);
+  }
+});
+
+app.delete('/spells/:id', async (request, response, next) => {
+  try {
+    const id = request.params.id;
+    const spellRepository = new SpellRepository(knex);
+    const spellController = new SpellController(spellRepository);
+    await spellController.destroy(id);
+    response.sendStatus(200);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/spells', async (request, response, next) => {
+  try {
+    const {
+      castingTimes,
+      components,
+      concentration,
+      description,
+      descriptionHigherLevel,
+      durationTimes,
+      level,
+      magicSchool,
+      materials,
+      name,
+      range,
+      ritual,
+      source,
+      system
+    } = request.body;
+
+    const castingTimesRequests = castingTimes.map((castingTime: { actionType: string, total: number }) => {
+      const { actionType, total } = castingTime;
+      return new CastingTimeRequest(actionType, total);
+    });
+
+    const durationTimesRequests = durationTimes.map((durationTime: { actionType: string, total: number }) => {
+      const { actionType, total } = durationTime;
+      return new DurationTimeRequest(actionType, total);
+    });
+
+    const createSpellRequest = new CreateSpellRequest(
+      castingTimesRequests,
+      components.join(''),
+      concentration,
+      description,
+      descriptionHigherLevel,
+      durationTimesRequests,
+      level,
+      magicSchool,
+      materials,
+      name,
+      range,
+      ritual,
+      source,
+      system
+    );
+    
+    const spellRepository = new SpellRepository(knex);
+    const spellController = new SpellController(spellRepository);
+    const spellResponse = await spellController.create(createSpellRequest);
     response.send(spellResponse.toJson());
   } catch(error) {
     next(error);

@@ -5,6 +5,7 @@ import { BadArgumentException } from '../exceptions/exceptions';
 import { CastingTimeModel } from '../models/CastingTimeModel';
 import { CastingTimeResponse } from '../responses/CastingTimeResponse';
 import { CastingTimesResponse } from '../responses/CastingTimesResponse';
+import { CreateSpellRequest } from '../requests/CreateSpellRequest';
 import { CreatureModel } from '../models/CreatureModel';
 import { CreatureResponse } from '../responses/CreatureResponse';
 import { CreaturesResponse } from '../responses/CretauresResponse';
@@ -24,6 +25,51 @@ export class SpellController {
 
   constructor(spellRepository: ISpellRepository) {
     this.spellRepository = spellRepository;
+  }
+
+  async create(createSpellRequest: CreateSpellRequest): Promise<SpellResponse> {
+    if (!createSpellRequest.validate()) {
+      throw new BadArgumentException();
+    }
+
+    const spell = await this.spellRepository.create(createSpellRequest);
+
+    const response = await this.getSpellResponse(spell);
+    const castingTimesResponse = new CastingTimesResponse([]);
+    const durationTimesResponse = new DurationTimesResponse([]);
+
+    for(let x=0; x<createSpellRequest.castingTimes.length; x++) {
+      const castingTime = createSpellRequest.castingTimes[x];
+      const castingTimeModel = await this.spellRepository.createCastingTime(
+        castingTime.actionType,
+        castingTime.total,
+        spell.getId()
+      );
+
+      castingTimesResponse.castingTimes.push(this.mapCastingTimeModelToResponse(castingTimeModel));
+    }
+
+    for(let x=0; x<createSpellRequest.durationTimes.length; x++) {
+      const durationTime = createSpellRequest.durationTimes[x];
+      const durationTimeModel = await this.spellRepository.createDurationTime(
+        durationTime.actionType,
+        durationTime.total,
+        spell.getId()
+      );
+
+      durationTimesResponse.durationTimes.push(this.mapDurationTimeModelToResponse(durationTimeModel));
+    }
+
+    return response;
+  }
+
+  async destroy(id: string): Promise<void> {
+    if (!id) {
+      throw new BadArgumentException();
+    }
+
+    await this.spellRepository.find(id);
+    await this.spellRepository.destroy(id);
   }
 
   async get(): Promise<SpellsResponse> {

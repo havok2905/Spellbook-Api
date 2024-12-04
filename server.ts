@@ -1,10 +1,13 @@
 import {
   CastingTimeRequest,
   CreateSpellRequest,
+  CreatureActionRequest,
+  CreatureRequest,
   DurationTimeRequest
 } from './requests/CreateSpellRequest';
 import cors from 'cors';
 import { CreateSpellbookRequest } from './requests/CreateSpellbookRequest';
+import { DescriptionEntity } from './requests/types';
 import { errorHandler } from './middleware/errorHandler';
 import express from 'express';
 import Knex from 'knex';
@@ -67,6 +70,7 @@ app.post('/spells', async (request, response, next) => {
       castingTimes,
       components,
       concentration,
+      creatures,
       description,
       descriptionHigherLevel,
       durationTimes,
@@ -90,10 +94,105 @@ app.post('/spells', async (request, response, next) => {
       return new DurationTimeRequest(actionType, total);
     });
 
+    const creaturesRequests = creatures.map((creature: {
+      ac: string;
+      actions: Array<{
+        name: string;
+        description: DescriptionEntity[]
+      }>;
+      alignment: string;
+      cha: number;
+      con: number;
+      conditionImmunities: string;
+      cr: string;
+      damageImmunities: string;
+      damageResistances: string;
+      damageVulnerabilities: string;
+      dex: number;
+      features: Array<{
+        name: string;
+        description: DescriptionEntity[]
+      }>;
+      hp: string;
+      int: number;
+      languages: string;
+      name: string;
+      proficiencyBonus: string;
+      senses: string;
+      size: string;
+      speed: string;
+      str: number;
+      type: string;
+      wis: number;
+    }) => {
+      const {
+        ac,
+        actions,
+        alignment,
+        cha,
+        con,
+        conditionImmunities,
+        cr,
+        damageImmunities,
+        damageResistances,
+        damageVulnerabilities,
+        dex,
+        features,
+        hp,
+        int,
+        languages,
+        name,
+        proficiencyBonus,
+        senses,
+        size,
+        speed,
+        str,
+        type,
+        wis
+      } = creature;
+
+      const creatureActionRequests = actions.map((action) => {
+        const { name, description } = action;
+        return new CreatureActionRequest(name, description);
+      });
+
+      const creatureFeatureRequests = features.map((action) => {
+        const { name, description } = action;
+        return new CreatureActionRequest(name, description);
+      });
+
+      return new CreatureRequest(
+        ac,
+        creatureActionRequests,
+        alignment,
+        cha,
+        con,
+        conditionImmunities,
+        cr,
+        damageImmunities,
+        damageResistances,
+        damageVulnerabilities,
+        dex,
+        creatureFeatureRequests,
+        hp,
+        int,
+        languages,
+        name,
+        proficiencyBonus,
+        senses,
+        size,
+        speed,
+        str,
+        type,
+        wis
+      );
+    });
+
     const createSpellRequest = new CreateSpellRequest(
       castingTimesRequests,
       components.join(''),
       concentration,
+      creaturesRequests,
       description,
       descriptionHigherLevel,
       durationTimesRequests,

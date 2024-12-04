@@ -1,7 +1,8 @@
 import { ActionModel } from '../models/ActionModel';
 import { CastingTimeModel } from '../models/CastingTimeModel';
-import { CreateSpellRequest } from '../requests/CreateSpellRequest';
+import { CreateSpellRequest, CreatureRequest } from '../requests/CreateSpellRequest';
 import { CreatureModel } from '../models/CreatureModel';
+import { DescriptionEntity } from '../responses/types';
 import { DurationTimeModel } from '../models/DurationTimeModel';
 import { EntityNotFoundException } from '../exceptions/exceptions';
 import { FeatureModel } from '../models/FeatureModel';
@@ -12,6 +13,9 @@ export interface ISpellRepository {
   create(createSpellRequest: CreateSpellRequest): Promise<SpellModel>;
   createCastingTime(actionType: string, total: number, spellId: string): Promise<CastingTimeModel>;
   createDurationTime(actionType: string, total: number, spellId: string): Promise<DurationTimeModel>;
+  createCreature(createCreatureRequest: CreatureRequest, spellId: string): Promise<CreatureModel>;
+  createCreatureAction(name: string, description: DescriptionEntity[], creatureId: string): Promise<ActionModel>;
+  createCreatureFeature(name: string, description: DescriptionEntity[], creatureIdspellId: string): Promise<FeatureModel>;
   destroy(id: string): Promise<void>;
   find(id: string): Promise<SpellModel>;
   findAll(): Promise<SpellModel[]>;
@@ -206,6 +210,145 @@ export class SpellRepository implements ISpellRepository {
       .catch(() => {
         reject();
       });
+    });
+
+    return response;
+  }
+
+  async createCreatureAction(
+    name: string,
+    description: DescriptionEntity[],
+    creatureId: string
+  ): Promise<ActionModel> {
+    const actionModel = new ActionModel(
+      JSON.stringify(description),
+      name,
+      creatureId,
+      new Date().toISOString().slice(0, 19).replace('T', ' ')
+    );
+
+    actionModel.generateId();
+
+    const response = new Promise<ActionModel>((resolve, reject) => {
+      this
+        .knex(this.actionsTableName)
+        .insert({
+          id: actionModel.getId(),
+          description: actionModel.description,
+          name: actionModel.name,
+          spell_creature_id: actionModel.spell_creature_id,
+          created_at: actionModel.created_at
+        })
+        .then(() => {
+          resolve(actionModel);
+        })
+        .catch(() => {
+          reject();
+        });
+    });
+
+    return response;
+  }
+
+  async createCreatureFeature(
+    name: string,
+    description: DescriptionEntity[],
+    creatureId: string
+  ): Promise<FeatureModel> {
+    const featureModel = new FeatureModel(
+      JSON.stringify(description),
+      name,
+      creatureId,
+      new Date().toISOString().slice(0, 19).replace('T', ' ')
+    );
+
+    featureModel.generateId();
+
+    const response = new Promise<FeatureModel>((resolve, reject) => {
+      this
+        .knex(this.actionsTableName)
+        .insert({
+          id: featureModel.getId(),
+          description: featureModel.description,
+          name: featureModel.name,
+          spell_creature_id: featureModel.spell_creature_id,
+          created_at: featureModel.created_at
+        })
+        .then(() => {
+          resolve(featureModel);
+        })
+        .catch(() => {
+          reject();
+        });
+    });
+
+    return response;
+  }
+
+  async createCreature(createCreatureRequest: CreatureRequest, spellId: string): Promise<CreatureModel> {
+    const creatureModel = new CreatureModel(
+      createCreatureRequest.ac,
+      createCreatureRequest.alignment,
+      createCreatureRequest.cha,
+      createCreatureRequest.con,
+      createCreatureRequest.conditionImmunities,
+      createCreatureRequest.cr,
+      createCreatureRequest.type,
+      createCreatureRequest.damageImmunities,
+      createCreatureRequest.damageResistances,
+      createCreatureRequest.damageVulnerabilities,
+      createCreatureRequest.dex,
+      createCreatureRequest.hp,
+      createCreatureRequest.int,
+      createCreatureRequest.languages,
+      createCreatureRequest.name,
+      createCreatureRequest.proficiencyBonus,
+      createCreatureRequest.senses,
+      createCreatureRequest.size,
+      createCreatureRequest.speed,
+      spellId,
+      createCreatureRequest.str,
+      createCreatureRequest.wis,
+      new Date().toISOString().slice(0, 19).replace('T', ' ')
+    );
+
+    creatureModel.generateId();
+
+    const response = new Promise<CreatureModel>((resolve, reject) => {
+      this
+        .knex(this.creaturesTableName)
+        .insert({
+          id: creatureModel.getId(),
+          ac: creatureModel.ac,
+          alignment: creatureModel.alignment,
+          cha: creatureModel.cha,
+          con: creatureModel.con,
+          condition_immunities: creatureModel.condition_immunities,
+          cr: creatureModel.cr,
+          creature_type: creatureModel.creature_type,
+          damage_immunities: creatureModel.damage_immunities,
+          damage_resistances: creatureModel.damage_resistances,
+          damage_vulnerabilities: creatureModel.damage_vulnerabilities,
+          dex: creatureModel.dex,
+          hp: creatureModel.hp,
+          intelligence: creatureModel.intelligence,
+          languages: creatureModel.languages,
+          name: creatureModel.name,
+          proficiency_bonus: creatureModel.proficiency_bonus,
+          senses: creatureModel.senses,
+          size: creatureModel.size,
+          speed: creatureModel.speed,
+          spell_id: creatureModel.spell_id,
+          str: creatureModel.str,
+          wis: creatureModel.wis,
+          created_at: creatureModel.created_at
+        })
+        .then(() => {
+          resolve(creatureModel);
+        })
+        .catch(() => {
+          reject();
+        });
     });
 
     return response;

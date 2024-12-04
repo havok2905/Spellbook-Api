@@ -37,6 +37,50 @@ export class SpellController {
     const response = await this.getSpellResponse(spell);
     const castingTimesResponse = new CastingTimesResponse([]);
     const durationTimesResponse = new DurationTimesResponse([]);
+    const creaturesResponse = new CreaturesResponse([]);
+
+    for(let x=0; x<createSpellRequest.creatures.length; x++) {
+      const creature = createSpellRequest.creatures[x];
+      const creatureModel = await this.spellRepository.createCreature(
+        creature,
+        spell.getId()
+      );
+
+      const actionsResponse = new ActionsResponse([]);
+      const featuresResponse = new FeaturesResponse([]);
+
+      for(let y=0; y<creature.actions.length; y++) {
+        const action = creature.actions[y];
+        const actionModel = await this.spellRepository.createCreatureAction(
+          action.name,
+          action.description,
+          creatureModel.getId()
+        );
+
+        const actionResponse = this.mapActionModelToResponse(actionModel);
+
+        actionsResponse.actions.push(actionResponse);
+      }
+
+      for(let y=0; y<creature.features.length; y++) {
+        const feature = creature.features[y];
+        const featureModel = await this.spellRepository.createCreatureFeature(
+          feature.name,
+          feature.description,
+          creatureModel.getId()
+        );
+
+        const featureResponse = this.mapFeatureModelToResponse(featureModel);
+
+        featuresResponse.features.push(featureResponse);
+      }
+
+      const creatureResponse = this.mapCreatureModelToResponse(creatureModel);
+
+      creatureResponse.actions = actionsResponse;
+      creatureResponse.features = featuresResponse;
+      creaturesResponse.creatures.push(creatureResponse);
+    }
 
     for(let x=0; x<createSpellRequest.castingTimes.length; x++) {
       const castingTime = createSpellRequest.castingTimes[x];

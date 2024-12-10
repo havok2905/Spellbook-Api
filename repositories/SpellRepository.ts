@@ -42,58 +42,23 @@ export class SpellRepository implements ISpellRepository {
   }
 
   async destroy(id: string): Promise<void> {
-    const response = new Promise<void>((resolve, reject) => {
-      this
-        .knex(this.spellbookSpellsTableName)
-        .delete()
-        .where({ spell_id: id})
-        .then(() => {
-          this
-            .knex(this.castingTimesTableName)
-            .delete()
-            .where({ spell_id: id })
-            .then(() => {
-              this
-                .knex(this.durationTimesTableName)
-                .delete()
-                .where({ spell_id: id })
-                .then(() => {
-                  this
-                    .knex(this.tableName)
-                    .delete()
-                    .where({ id })
-                    .then(() => {
-                      resolve();
-                    })
-                    .catch(() => {
-                      reject();
-                    });
-                })
-                .catch(() => {
-                  reject();
-                })
-            })
-            .catch(() => {
-              reject();
-            });
-        })
-        .catch(() => {
-          reject();
-        });
-        
-      this
-        .knex(this.tableName)
-        .delete()
-        .where({ id })
-        .then(() => {
-          resolve();
-        })
-        .catch(() => {
-          reject();
-        });
-    });
+    await this.knex(this.spellbookSpellsTableName).delete().where({ spell_id: id});
+    await this.knex(this.castingTimesTableName).delete().where({ spell_id: id });
+    await this.knex(this.durationTimesTableName).delete().where({ spell_id: id });
 
-    return response;
+    const creaturesResponse = await this.knex(this.creaturesTableName).select('id').where({ spell_id: id });
+
+    for(let x=0; x<creaturesResponse.length; x++) {
+      const creature = creaturesResponse[x];
+      console.log(creature);
+      const creatureId = creature.id;
+
+      await this.knex(this.actionsTableName).delete().where({ spell_creature_id: creatureId });
+      await this.knex(this.featuresTableName).delete().where({ spell_creature_id: creatureId });
+    }
+
+    await this.knex(this.creaturesTableName).delete().where({spell_id: id});
+    await this.knex(this.tableName).delete().where({ id });
   }
 
   async create(createSpellRequest: CreateSpellRequest): Promise<SpellModel> {
